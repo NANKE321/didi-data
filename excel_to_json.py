@@ -100,15 +100,17 @@ def excel_to_json(excel_path, output_path):
         threshold = safe_num(get('入围门槛', get('当前入围门槛', 0)))
         diff = round(billing_time - threshold, 2)
 
-        # 按整月剩余天数计算每天最低计费
+        # 按 5.5h/天 × 本月天数 计算整月门槛
         from calendar import monthrange
         try:
             dt = datetime.strptime(date_str, '%Y-%m-%d')
             days_in_month = monthrange(dt.year, dt.month)[1]
             remaining_days = days_in_month - dt.day
         except:
-            remaining_days = 4  # 默认
-        gap = threshold - billing_time
+            days_in_month = 30
+            remaining_days = 4
+        monthly_target = 5.5 * days_in_month  # 整月目标时长
+        gap = monthly_target - billing_time
         daily_min_billing = round(gap / remaining_days, 2) if gap > 0 and remaining_days > 0 else 0.0
 
         peak_ratio = safe_num(get('工作日高峰计费占比', 0))

@@ -100,6 +100,17 @@ def excel_to_json(excel_path, output_path):
         threshold = safe_num(get('入围门槛', get('当前入围门槛', 0)))
         diff = round(billing_time - threshold, 2)
 
+        # 按整月剩余天数计算每天最低计费
+        from calendar import monthrange
+        try:
+            dt = datetime.strptime(date_str, '%Y-%m-%d')
+            days_in_month = monthrange(dt.year, dt.month)[1]
+            remaining_days = days_in_month - dt.day
+        except:
+            remaining_days = 4  # 默认
+        gap = threshold - billing_time
+        daily_min_billing = round(gap / remaining_days, 2) if gap > 0 and remaining_days > 0 else 0.0
+
         peak_ratio = safe_num(get('工作日高峰计费占比', 0))
         fast_ratio = safe_num(get('快优订单占比', 0))
         if peak_ratio <= 1:
@@ -124,7 +135,7 @@ def excel_to_json(excel_path, output_path):
             "peak_online_time": round(safe_num(get('高峰在线时间', 0)), 2),
             "threshold": round(threshold, 2),
             "diff": diff,
-            "daily_min_billing": round(safe_num(get('剩余每天最低计费时长', 0)), 2),
+            "daily_min_billing": daily_min_billing,
             "early_peak": round(safe_num(get('早高峰计费', 0)), 2),
             "noon_peak": round(safe_num(get('午高峰计费', 0)), 2),
             "late_peak": round(safe_num(get('晚高峰计费', 0)), 2),

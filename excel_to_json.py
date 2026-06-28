@@ -109,7 +109,8 @@ def excel_to_json(excel_path, output_path):
         except:
             days_in_month = 30
             remaining_days = 4
-        monthly_target = 5.5 * int(safe_num(get('在职天数', get('本月绑车天数', 0))))  # 整月目标时长
+        total_bound_days = int(safe_num(get('在职天数', get('本月绑车天数', 0)))) + remaining_days
+        monthly_target = 5.5 * total_bound_days  # 整月目标时长
         gap = monthly_target - billing_time
         daily_min_billing = round(gap / remaining_days, 2) if gap > 0 and remaining_days > 0 else 0.0
 

@@ -212,23 +212,55 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
     <!-- 入围分析 -->
     <div class="section" style="padding-top:0">
       <div class="section-title"><span class="icon">🎯</span>入围分析</div>
-      <div class="metric-grid">
-        <div class="metric-item">
-          <div class="label">本月目标</div>
-          <div class="value" id="mTh"></div>
+      <!-- 切换按钮 -->
+      <div class="date-tabs" style="margin-bottom:12px">
+        <div class="date-tab active" onclick="switchView('current',this)">当前计费</div>
+        <div class="date-tab" onclick="switchView('monthly',this)">本月剩余计费</div>
+      </div>
+      <!-- 当前计费视图 -->
+      <div id="viewCurrent">
+        <div class="metric-grid">
+          <div class="metric-item">
+            <div class="label">入围门槛</div>
+            <div class="value" id="mTh"></div>
+          </div>
+          <div class="metric-item" id="mDiffWrap">
+            <div class="label">入围差额</div>
+            <div class="value" id="mDiff"></div>
+          </div>
+          <div class="metric-item">
+            <div class="label">日均服务分</div>
+            <div class="value" id="mSc"></div>
+          </div>
+          <div class="metric-item">
+            <div class="label">本月绑车天数</div>
+            <div class="value" id="mDays"></div>
+          </div>
         </div>
-        <div class="metric-item" id="mDiffWrap">
-          <div class="label">入围差额</div>
-          <div class="value" id="mDiff"></div>
-        </div>
-        <div class="metric-item highlight">
-          <div class="label" style="font-weight:700;color:#92400e">⚠️ 剩余每天计费</div>
-          <div class="value" id="mDm" style="color:#b45309"></div>
-          <div class="sub-value">基准5.5h/天</div>
-        </div>
-        <div class="metric-item">
-          <div class="label">日均服务分</div>
-          <div class="value" id="mSc"></div>
+      </div>
+      <!-- 本月剩余计费视图 -->
+      <div id="viewMonthly" style="display:none">
+        <div class="metric-grid">
+          <div class="metric-item">
+            <div class="label">本月目标 (5.5h×天数)</div>
+            <div class="value" id="mMTarget" style="color:var(--primary)"></div>
+          </div>
+          <div class="metric-item">
+            <div class="label">已计费时长</div>
+            <div class="value" id="mMBilled"></div>
+          </div>
+          <div class="metric-item" id="mMGapWrap">
+            <div class="label">差额</div>
+            <div class="value" id="mMGap"></div>
+          </div>
+          <div class="metric-item">
+            <div class="label">本月剩余天数</div>
+            <div class="value" id="mMRemain"></div>
+          </div>
+          <div class="metric-item highlight">
+            <div class="label" style="font-weight:700;color:#92400e">⚠️ 剩余每天计费</div>
+            <div class="value" id="mMDaily" style="color:#b45309"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -426,6 +458,13 @@ function searchByName(name){
   renderCompare(name, dates);
 }
 
+function switchView(view, el){
+  document.querySelectorAll('.date-tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('viewCurrent').style.display=view==='current'?'block':'none';
+  document.getElementById('viewMonthly').style.display=view==='monthly'?'block':'none';
+}
+
 function renderCard(d){
   document.getElementById('rNm').textContent=d.name;
   document.getElementById('rPl').textContent=d.plate||'-';
@@ -445,35 +484,53 @@ function renderCard(d){
   document.getElementById('mTi').textContent=d.total_billing_time.toFixed(1)+'h';
   document.getElementById('mOn').textContent=d.online_time.toFixed(1)+'h';
   
-  // Entry analysis
-  // 本月目标: 5.5h × 本月天数
-  var dt=new Date(d.date);
-  var daysInMonth=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();
-  var monthlyTarget=5.5*daysInMonth;
-  document.getElementById('mTh').textContent=monthlyTarget.toFixed(1)+'h';
+  // 当前计费视图
+  document.getElementById('mTh').textContent=d.threshold>0?d.threshold.toFixed(1)+'h':'-';
   
   var diffEl=document.getElementById('mDiff');
   var diffWrap=document.getElementById('mDiffWrap');
-  var gap=monthlyTarget-d.total_billing_time;
-  if(gap<=0){
-    diffEl.textContent='✅ 已完成';
+  if(d.diff>=0){
+    diffEl.textContent='✅ +'+d.diff.toFixed(1)+'h';
     diffEl.className='value green';
-    diffWrap.className='metric-item';
     diffWrap.style.background='#f0fdf4';
   }else{
-    diffEl.textContent=gap.toFixed(1)+'h';
+    diffEl.textContent=d.diff.toFixed(1)+'h';
     diffEl.className='value red';
-    diffWrap.className='metric-item';
     diffWrap.style.background='#fef2f2';
   }
   
-  var dmEl=document.getElementById('mDm');
-  if(d.daily_min_billing<=0){
-    dmEl.textContent='✅ 已完成';
-    dmEl.style.color='var(--success)';
+  document.getElementById('mSc').textContent=d.daily_service_score.toFixed(1)+'分';
+  document.getElementById('mDays').textContent=d.days_worked+'天';
+  
+  // 本月剩余计费视图
+  var dt=new Date(d.date);
+  var daysInMonth=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();
+  var remainingDays=daysInMonth-dt.getDate();
+  var monthlyTarget=5.5*daysInMonth;
+  document.getElementById('mMTarget').textContent=monthlyTarget.toFixed(1)+'h';
+  document.getElementById('mMBilled').textContent=d.total_billing_time.toFixed(1)+'h';
+  document.getElementById('mMRemain').textContent=remainingDays+'天';
+  
+  var mGap=monthlyTarget-d.total_billing_time;
+  var mGapEl=document.getElementById('mMGap');
+  var mGapWrap=document.getElementById('mMGapWrap');
+  if(mGap<=0){
+    mGapEl.textContent='✅ 已完成';
+    mGapEl.className='value green';
+    mGapWrap.style.background='#f0fdf4';
   }else{
-    dmEl.textContent=d.daily_min_billing.toFixed(1)+'h';
-    dmEl.style.color=d.daily_min_billing>8?'var(--danger)':'#b45309';
+    mGapEl.textContent=mGap.toFixed(1)+'h';
+    mGapEl.className='value red';
+    mGapWrap.style.background='#fef2f2';
+  }
+  
+  var mDailyEl=document.getElementById('mMDaily');
+  if(d.daily_min_billing<=0){
+    mDailyEl.textContent='✅ 已完成';
+    mDailyEl.style.color='var(--success)';
+  }else{
+    mDailyEl.textContent=d.daily_min_billing.toFixed(1)+'h';
+    mDailyEl.style.color=d.daily_min_billing>8?'var(--danger)':'#b45309';
   }
   
   document.getElementById('mSc').textContent=d.daily_service_score.toFixed(1)+'分';

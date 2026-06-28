@@ -466,6 +466,9 @@ function renderCard(d){
   if(d.daily_min_billing<=0){
     dmEl.textContent='✅ 已完成';
     dmEl.style.color='var(--success)';
+  }else if(d.daily_min_billing<=5.5){
+    dmEl.textContent='✅ 已完成';
+    dmEl.style.color='var(--success)';
   }else{
     dmEl.textContent=d.daily_min_billing.toFixed(1)+'h';
     dmEl.style.color=d.daily_min_billing>8?'var(--danger)':'#b45309';

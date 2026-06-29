@@ -555,78 +555,126 @@ function renderCard(d){
 }
 
 function calcReward(d){
-  var rewards=[];var totalReward=0;
-  if(d.entered==='1'){
-    var tier=d.tier||'';var orders=d.total_orders;
-    var rev=d.total_flow;var pr=d.peak_ratio/100;
-    var fr=d.fast_ratio/100;var sc=d.daily_service_score;
-    var passed=true;
-    // 1. 流水筛选
-    var revMin=tier==='S+'?15001:tier==='S'?15001:tier==='A'?15000:0;
-    if(revMin>0&&rev<revMin){passed=false}
-    // 2. 完单档位奖励
-    if(passed){
-      var tR=0,tNext='';
-      if(tier==='S+'){tR=rev>=18001?400:300;tNext=tR<400?'再+'+(18001-rev).toFixed(0)+'流水→档位奖励400元':''}
-      else if(tier==='S'){tR=rev>=30001?300:rev>=18001?200:100;tNext=tR<200?'再+'+(18001-rev).toFixed(0)+'流水→+100元':tR<300?'再+'+(30001-rev).toFixed(0)+'流水→+100元':''}
-      else if(tier==='A'){tR=rev>=17000?200:100;tNext=tR<200?'再+'+(17000-rev).toFixed(0)+'流水→+100元':''}
-      else if(tier==='B'){tR=50;tNext='升级A档可+50元'}
-      if(tR>0){rewards.push({name:'完单档位 '+tier,amount:tR,next:tNext});totalReward+=tR}else{passed=false}
-    }
-    // 3. 高峰占比奖励
-    if(passed&&pr>=0.40){
-      var pkR=0;
-      var spk=[[100,300,500,800],[300,600,1400,2000],[600,1200,2000,3000],[1000,1700,2500,3500],[1800,2600,3500,4500],[2800,3000,5000,7500]];
-      var s_pk=[[100,300,400,500],[300,600,800,1200],[500,900,1300,1800],[600,1100,1600,2100],[1000,1500,2000,2500],[1500,2500,3500,4500]];
-      var apk=[[0,0,100,200],[0,200,300,400]];
-      var ri=rev>34001?5:rev>=30001?4:rev>=26001?3:rev>=22001?2:rev>=18001?1:0;
-      var ci=pr>=0.55?3:pr>=0.50?2:pr>=0.45?1:0;
-      if(tier==='S+'){pkR=spk[ri]?spk[ri][ci]||0:0}
-      else if(tier==='S'){pkR=s_pk[ri]?s_pk[ri][ci]||0:0}
-      else if(tier==='A'){ri=rev>=17000?1:0;pkR=apk[ri]?apk[ri][ci]||0:0}
-      else if(tier==='B'){pkR=pr>=0.55?200:pr>=0.50?100:0}
-      if(pkR>0){
-        var pkNext='',nextVal;
-        if(ci<3){var nextCi=ci+1;var pcts=[0.45,0.50,0.55];nextVal=tier==='S+'?spk[ri][nextCi]:tier==='S'?s_pk[ri][nextCi]:0;
-          if(nextVal&&nextVal>pkR){pkNext='高峰再+'+((pcts[ci]-pr)*100).toFixed(1)+'%→奖励'+nextVal+'元(+'+(nextVal-pkR)+')'}}
-        if(!pkNext&&ri<5){var nextRi=ri+1;var revs=[18001,22001,26001,30001,34001];
-          nextVal=tier==='S+'?spk[nextRi][ci]:tier==='S'?s_pk[nextRi][ci]:0;
-          if(nextVal&&nextVal>pkR){pkNext='流水再+'+(revs[ri]-rev).toFixed(0)+'→奖励'+nextVal+'元(+'+(nextVal-pkR)+')'}}
-        if(!pkNext){pkNext='已达当前最高'}
-        rewards.push({name:'高峰占比 '+(pr*100).toFixed(1)+'% · 流水'+rev.toFixed(0),amount:pkR,next:pkNext});totalReward+=pkR;
-      }else{passed=false}
-    }else if(passed){passed=false}
-    // 4. 快优订单占比奖励
-    if(passed&&fr>=0.60){
-      var qR=fr>=0.90?400:fr>=0.80?300:fr>=0.70?200:100;
-      var qNext='';
-      if(fr>=0.90){qNext='已达最高档'}
-      else if(fr>=0.80){qNext='再+'+((0.90-fr)*100).toFixed(1)+'%→+100元'}
-      else if(fr>=0.70){qNext='再+'+((0.80-fr)*100).toFixed(1)+'%→+100元'}
-      else{qNext='再+'+((0.70-fr)*100).toFixed(1)+'%→+100元'}
-      rewards.push({name:'快优占比 '+(fr*100).toFixed(1)+'%',amount:qR,next:qNext});totalReward+=qR;
-    }
-    // 5. 服务分奖励
-    if(passed&&sc>=120){
-      rewards.push({name:'服务分 '+sc.toFixed(1),amount:100,next:'已达标准'});totalReward+=100;
-    }
+  var rewards={flow:0,peak:0,order:0,service:0,fast:0};
+  var totalReward=0;
+  var details=[];
+  if(d.entered!=='1'){
+    document.getElementById('rewardSec').style.display='none';
+    calcSprint(d,0);return;
   }
+  var tier=d.tier||'';
+  var rev=d.total_flow;
+  var pr=d.peak_ratio/100;
+  var fr=d.fast_ratio/100;
+  var sc=d.daily_service_score;
+  var passed=true;
+
+  // A档
+  if(tier==='A'){
+    if(rev>17000){
+      if(pr>=0.55)rewards.peak=400;
+      else if(pr>=0.50)rewards.peak=300;
+      else if(pr>=0.45)rewards.peak=200;
+    }else if(rev>15000){
+      if(pr>=0.55)rewards.peak=200;
+      else if(pr>=0.50)rewards.peak=100;
+    }else{passed=false;}
+    if(rewards.peak>0)details.push({name:'高峰占比',amount:rewards.peak,icon:'⏰'});
+  }
+  // S档
+  else if(tier==='S'){
+    if(rev>34000){
+      rewards.order=200;
+      if(pr>=0.55)rewards.peak=4500;else if(pr>=0.50)rewards.peak=3500;else if(pr>=0.45)rewards.peak=2500;else if(pr>=0.40)rewards.peak=1500;
+    }else if(rev>30000){
+      rewards.order=200;
+      if(pr>=0.55)rewards.peak=2500;else if(pr>=0.50)rewards.peak=2000;else if(pr>=0.45)rewards.peak=1500;else if(pr>=0.40)rewards.peak=1000;
+    }else if(rev>26000){
+      rewards.order=200;
+      if(pr>=0.55)rewards.peak=2100;else if(pr>=0.50)rewards.peak=1600;else if(pr>=0.45)rewards.peak=1100;else if(pr>=0.40)rewards.peak=600;
+    }else if(rev>22000){
+      rewards.order=200;
+      if(pr>=0.55)rewards.peak=1800;else if(pr>=0.50)rewards.peak=1300;else if(pr>=0.45)rewards.peak=900;else if(pr>=0.40)rewards.peak=500;
+    }else if(rev>18000){
+      rewards.order=200;
+      if(pr>=0.55)rewards.peak=1200;else if(pr>=0.50)rewards.peak=800;else if(pr>=0.45)rewards.peak=600;else if(pr>=0.40)rewards.peak=300;
+    }else if(rev>15000){
+      rewards.order=100;
+      if(pr>=0.55)rewards.peak=500;else if(pr>=0.50)rewards.peak=400;else if(pr>=0.45)rewards.peak=300;else if(pr>=0.40)rewards.peak=100;
+    }else{passed=false;}
+    if(rewards.order>0)details.push({name:'完单奖励',amount:rewards.order,icon:'📦'});
+    if(rewards.peak>0)details.push({name:'高峰占比',amount:rewards.peak,icon:'⏰'});
+  }
+  // S+档
+  else if(tier==='S+'){
+    if(rev>34000){
+      rewards.order=400;
+      if(pr>=0.55)rewards.peak=7500;else if(pr>=0.50)rewards.peak=5000;else if(pr>=0.45)rewards.peak=3000;else if(pr>=0.40)rewards.peak=2800;
+    }else if(rev>30000){
+      rewards.order=400;
+      if(pr>=0.55)rewards.peak=4500;else if(pr>=0.50)rewards.peak=3500;else if(pr>=0.45)rewards.peak=2600;else if(pr>=0.40)rewards.peak=1800;
+    }else if(rev>26000){
+      rewards.order=400;
+      if(pr>=0.55)rewards.peak=3500;else if(pr>=0.50)rewards.peak=2500;else if(pr>=0.45)rewards.peak=1700;else if(pr>=0.40)rewards.peak=1000;
+    }else if(rev>22000){
+      rewards.order=400;
+      if(pr>=0.55)rewards.peak=3000;else if(pr>=0.50)rewards.peak=2000;else if(pr>=0.45)rewards.peak=1200;else if(pr>=0.40)rewards.peak=600;
+    }else if(rev>18000){
+      rewards.order=400;
+      if(pr>=0.55)rewards.peak=2000;else if(pr>=0.50)rewards.peak=1400;else if(pr>=0.45)rewards.peak=600;else if(pr>=0.40)rewards.peak=300;
+    }else if(rev>15000){
+      rewards.order=300;
+      if(pr>=0.55)rewards.peak=800;else if(pr>=0.50)rewards.peak=500;else if(pr>=0.45)rewards.peak=300;else if(pr>=0.40)rewards.peak=100;
+    }else{passed=false;}
+    if(rewards.order>0)details.push({name:'完单奖励',amount:rewards.order,icon:'📦'});
+    if(rewards.peak>0)details.push({name:'高峰占比',amount:rewards.peak,icon:'⏰'});
+  }else{passed=false;}
+
+  // 服务分奖励 (不含A档)
+  if(passed&&tier!=='A'&&sc>=120){
+    rewards.service=100;
+    details.push({name:'服务分奖励',amount:100,icon:'⭐'});
+  }
+
+  // 快优订单占比奖励 (不含A档)
+  if(passed&&tier!=='A'&&fr>=0.60){
+    rewards.fast=100;
+    details.push({name:'快优订单奖励',amount:100,icon:'🚀'});
+  }
+
+  // 流水奖励提示
+  if(passed){
+    var flowNote='';
+    if(tier==='A'){
+      if(rev<=15000)flowNote='流水需>1.5万';
+      else if(rev<=17000)flowNote='再+'+(17000-rev).toFixed(0)+'流水→解锁更高档';
+    }else if(tier==='S'){
+      var sLevels=[15000,18000,22000,26000,30000,34000];
+      for(var i=0;i<sLevels.length;i++){if(rev<=sLevels[i]){flowNote='再+'+(sLevels[i]-rev).toFixed(0)+'流水→解锁更高档';break;}}
+    }else if(tier==='S+'){
+      var spLevels=[15000,18000,22000,26000,30000,34000];
+      for(var i=0;i<spLevels.length;i++){if(rev<=spLevels[i]){flowNote='再+'+(spLevels[i]-rev).toFixed(0)+'流水→解锁更高档';break;}}
+    }
+    if(flowNote)details.push({name:'流水提示',amount:0,icon:'💰',note:flowNote});
+  }
+
+  totalReward=rewards.flow+rewards.peak+rewards.order+rewards.service+rewards.fast;
+
   var secEl=document.getElementById('rewardSec');
   var listEl=document.getElementById('rewardList');
   var totEl=document.getElementById('rewardTotal');
-  if(rewards.length>0){
+  if(details.length>0&&totalReward>0){
     secEl.style.display='';
-    var steps=['①流水达标','②完单档位','③高峰占比','④快优占比','⑤服务分'];
-    listEl.innerHTML=rewards.map(function(r,i){
-      var nextHtml=r.next?'<div style="font-size:11px;color:#f59e0b;margin-top:4px">💡 '+r.next+'</div>':'';
-      return '<div style="padding:12px;margin-bottom:8px;background:#f0fdf4;border-radius:10px;border-left:3px solid #22c55e"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#333">'+(steps[i]||'')+' '+r.name+'</span><span style="font-size:16px;font-weight:700;color:#22c55e">+'+r.amount+'元</span></div>'+nextHtml+'</div>';
-    }).join('');
+    listEl.innerHTML=details.map(function(r){
+      if(r.amount<=0&&!r.note)return'';
+      var amountHtml=r.amount>0?'<span style="font-size:16px;font-weight:700;color:#22c55e">+'+r.amount+'元</span>':'';
+      var noteHtml=r.note?'<div style="font-size:11px;color:#f59e0b;margin-top:4px">💡 '+r.note+'</div>':'';
+      return '<div style="padding:12px;margin-bottom:8px;background:#f0fdf4;border-radius:10px;border-left:3px solid #22c55e"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#333">'+r.icon+' '+r.name+'</span>'+amountHtml+'</div>'+noteHtml+'</div>';
+    }).filter(Boolean).join('');
     totEl.textContent=totalReward+'元';
   }else{
     secEl.style.display='none';
   }
-
-  // 冲刺目标
   calcSprint(d, totalReward);
 }
 

@@ -636,8 +636,8 @@ function calcReward(d){
     details.push({name:'服务分奖励',amount:100,icon:'⭐'});
   }
 
-  // 快优订单占比奖励 (不含A档)
-  if(passed&&tier!=='A'&&fr>=0.60){
+  // 快优订单占比奖励 (不含A档，仅60%-70%)
+  if(passed&&tier!=='A'&&fr>=0.60&&fr<=0.70){
     rewards.fast=100;
     details.push({name:'快优订单奖励',amount:100,icon:'🚀'});
   }

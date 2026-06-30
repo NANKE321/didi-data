@@ -355,20 +355,23 @@ var trendMode='flow';
 // ====== 通知栏配置（编辑这里发通告） ======
 var NOTICE={
   enabled:true,
-  title:'📢 系统公告',
-  body:'奖励规则已更新，请查看详情。如有疑问请联系管理员。'
+  title:'📢 温馨提示',
+  body:'雨天路滑，安全出行'
 };
 function initNotice(){
   var bar=document.getElementById('noticeBar');
   if(!NOTICE.enabled){bar.style.display='none';return}
-  if(localStorage.getItem('notice_closed')==='1'){bar.style.display='none';return}
+  // 新通告自动重新显示
+  var closedHash=localStorage.getItem('notice_hash');
+  var curHash=NOTICE.title+'|'+NOTICE.body;
+  if(closedHash===curHash){bar.style.display='none';return}
   document.getElementById('noticeTitle').textContent=NOTICE.title;
   document.getElementById('noticeBody').textContent=NOTICE.body;
   bar.style.display='flex';
 }
 function closeNotice(){
   document.getElementById('noticeBar').style.display='none';
-  localStorage.setItem('notice_closed','1');
+  localStorage.setItem('notice_hash',NOTICE.title+'|'+NOTICE.body);
 }
 
 function init(){

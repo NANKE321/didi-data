@@ -192,6 +192,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
       <div class="status-item">
         <div class="label">档位</div>
         <div class="value blue" id="rGe"></div>
+        <div id="rGap" style="font-size:11px;color:#f59e0b;margin-top:2px;font-weight:600"></div>
+        <div id="rBiz" style="font-size:11px;color:#94a3b8;margin-top:1px"></div>
       </div>
       <div class="status-item">
         <div class="label">绑车天数</div>
@@ -355,7 +357,7 @@ var trendMode='flow';
 var NOTICE={
   enabled:true,
   title:'📢 温馨提示',
-  body:'雨天路滑，安全出行'
+  body:'入围标准：1.计费时长完成 2.月均服务分>90分，两项同时达标才算入围。不入围次月租金上浮，档位单量每天有1~2单浮动仅供参考'
 };
 function initNotice(){
   var bar=document.getElementById('noticeBar');
@@ -479,6 +481,34 @@ function renderCard(d){
   
   document.getElementById('rGe').textContent=d.tier||'-';
   document.getElementById('rBd').textContent=d.days_worked+'天';
+  
+  // 业务线
+  var bizEl=document.getElementById('rBiz');
+  bizEl.textContent=d.biz_line?d.biz_line:'';
+  
+  // 差单计算（距下一档）
+  var gapEl=document.getElementById('rGap');
+  gapEl.style.color='#f59e0b';
+  var nextTier={'C':'B','B':'A','A':'S','S':'S+'};
+  var tierDaily={'C':15,'B':19,'A':22,'S':25,'S+':28};
+  var curTier=d.tier;
+  if(d.entered==='1'&&curTier&&curTier!=='-'&&nextTier[curTier]){
+    var dayNum=new Date(d.date).getDate();
+    var nextName=nextTier[curTier];
+    var nextThreshold=tierDaily[nextName]*dayNum;
+    var gap=nextThreshold-d.total_orders;
+    if(gap>0){
+      gapEl.textContent='距'+nextName+'差'+gap+'单';
+    }else{
+      gapEl.textContent='已达'+nextName+'门槛';
+      gapEl.style.color='#22c55e';
+    }
+  }else if(curTier==='S+'){
+    gapEl.textContent='🎉 已是最高档';
+    gapEl.style.color='#22c55e';
+  }else{
+    gapEl.textContent='';
+  }
   
   // Core metrics
   document.getElementById('mOrd').textContent=d.total_orders;

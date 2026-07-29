@@ -549,7 +549,7 @@ function renderCard(d){
   document.getElementById('mNp').textContent=d.noon_peak.toFixed(1)+'h';
   document.getElementById('mLp').textContent=d.late_peak.toFixed(1)+'h';
   document.getElementById('mNtp').textContent=d.night_peak.toFixed(1)+'h';
-  document.getElementById('mPr').textContent=d.peak_ratio+'%';
+  document.getElementById('mPr').textContent=d.peak_ratio.toFixed(2)+'%';
   document.getElementById('mWp').textContent=d.workday_peak_billing.toFixed(1)+'h';
   
   // Service quality

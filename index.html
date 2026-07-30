@@ -534,12 +534,17 @@ function renderCard(d){
   }
   
   var dmEl=document.getElementById('mDm');
-  if(d.diff>=0||d.daily_min_billing<=0){
+  var dataDate=new Date(d.date);
+  var daysInMonth=new Date(dataDate.getFullYear(),dataDate.getMonth()+1,0).getDate();
+  var remainDays=daysInMonth-dataDate.getDate();
+  var realGap=d.threshold-d.total_billing_time;
+  if(d.diff>=0||realGap<=0){
     dmEl.textContent='✅ 已完成';
     dmEl.style.color='var(--success)';
   }else{
-    dmEl.textContent=d.daily_min_billing.toFixed(1)+'h';
-    dmEl.style.color=d.daily_min_billing>8?'var(--danger)':'#b45309';
+    var dailyNeed=remainDays>0?(realGap/remainDays):realGap;
+    dmEl.textContent=dailyNeed.toFixed(1)+'h/'+remainDays+'天(含今天)';
+    dmEl.style.color=dailyNeed>8?'var(--danger)':'#b45309';
   }
   
   document.getElementById('mSc').textContent=d.daily_service_score.toFixed(1)+'分';
@@ -730,7 +735,7 @@ function calcSprint(d, currentReward){
     for(var i=0;i<aTiers.length;i++){if(rev<aTiers[i]){nextRevTier=aTiers[i];break}}
   }
   if(nextRevTier>0&&nextRevTier>rev){
-    var daysLeft=30-d.days_worked;
+    var sprintDate=new Date(d.date);var daysInMonth=new Date(sprintDate.getFullYear(),sprintDate.getMonth()+1,0).getDate();var daysLeft=daysInMonth-d.days_worked;
     var daily=daysLeft>0?(nextRevTier-rev)/daysLeft:0;
     targets.push({label:'流水达到 ¥'+Number(nextRevTier).toLocaleString(),detail:'还需 ¥'+(nextRevTier-rev).toFixed(0)+(daysLeft>0?'，日均 ¥'+daily.toFixed(0):'')});
   }

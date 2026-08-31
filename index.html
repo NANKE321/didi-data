@@ -638,21 +638,7 @@ function calcReward(d){
   var sc=d.daily_service_score;
   var entered=d.entered==='1';
 
-  // === 1. 完单档位奖励 ===
-  var orderAmt=0,orderHint='';
-  if(entered&&(tier==='S'||tier==='S+')){
-    var orderTiers=tier==='S+'?ORDER_SP:ORDER_S;
-    var ot=findTier(rev, orderTiers);
-    if(ot){orderAmt=ot.amount}
-  }
-  if(orderAmt>0){
-    totalReward+=orderAmt;
-    cards.push({title:'完单档位奖励',desc:tier+'档',amount:orderAmt,hint:'',ok:true});
-  }else{
-    cards.push({title:'完单档位奖励',desc:entered?tier+'档':'未入围',amount:0,hint:'',ok:false});
-  }
-
-  // === 2. 流水高峰奖励 ===
+  // === 1. 流水高峰奖励 ===
   var peakAmt=0,peakHint='';
   if(entered){
     var peakTiers=null;
@@ -688,15 +674,6 @@ function calcReward(d){
     cards.push({title:'快优订单奖励',desc:entered?'快优'+(fr*100).toFixed(1)+'%':'未入围',amount:0,hint:'',ok:false});
   }
 
-  // === 4. 服务分奖励 ===
-  var scAmt=0;
-  if(entered&&(tier==='S'||tier==='S+')&&sc>=120){scAmt=100}
-  if(scAmt>0){
-    totalReward+=scAmt;
-    cards.push({title:'服务分奖励',desc:'服务分'+sc.toFixed(1),amount:scAmt,hint:'已达标准',ok:true});
-  }else{
-    cards.push({title:'服务分奖励',desc:entered?'服务分'+sc.toFixed(1):'未入围',amount:0,hint:'',ok:false});
-  }
 
   // === 渲染 ===
   secEl.style.display='';

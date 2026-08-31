@@ -562,47 +562,29 @@ function renderCard(d){
   calcReward(d);
 }
 
-// === 新奖励规则 ===
-// A档：无完单奖励，纯流水+高峰
+// === 奖励规则 ===
+// A档：流水+高峰
 var REWARD_A=[
   {minRev:17000,peak:{45:200,50:300,55:400}},
   {minRev:15000,peak:{50:100,55:200}}
 ];
-// S档：完单奖励（单独）
-var ORDER_S=[
-  {minRev:34000,amount:300},
-  {minRev:30000,amount:200},
-  {minRev:26000,amount:200},
-  {minRev:22000,amount:200},
-  {minRev:18000,amount:200},
-  {minRev:15000,amount:100}
-];
-// S档：流水+高峰奖励（单独）
+// S档：流水+高峰
 var REWARD_S=[
-  {minRev:34000,peak:{40:1500,45:2500,50:3500,55:4500}},
-  {minRev:30000,peak:{40:1000,45:1500,50:2000,55:2500}},
-  {minRev:26000,peak:{40:600,45:1100,50:1600,55:2100}},
-  {minRev:22000,peak:{40:500,45:900,50:1300,55:1800}},
-  {minRev:18000,peak:{40:300,45:600,50:800,55:1200}},
-  {minRev:15000,peak:{40:100,45:300,50:400,55:500}}
+  {minRev:34000,peak:{40:700,45:2100,50:3000,55:3100}},
+  {minRev:30000,peak:{40:600,45:1700,50:2400,55:2600}},
+  {minRev:26000,peak:{40:500,45:1300,50:1900,55:2100}},
+  {minRev:22000,peak:{40:300,45:1000,50:1400,55:1600}},
+  {minRev:18000,peak:{40:200,45:500,50:800,55:1100}},
+  {minRev:15000,peak:{40:100,45:200,50:400,55:600}}
 ];
-// S+档：完单奖励（单独）
-var ORDER_SP=[
-  {minRev:34000,amount:400},
-  {minRev:30000,amount:400},
-  {minRev:26000,amount:400},
-  {minRev:22000,amount:400},
-  {minRev:18000,amount:400},
-  {minRev:15000,amount:300}
-];
-// S+档：流水+高峰奖励（单独）
+// S+档：流水+高峰
 var REWARD_SP=[
-  {minRev:34000,peak:{40:2800,45:3000,50:5000,55:7500}},
-  {minRev:30000,peak:{40:1800,45:2600,50:3500,55:4500}},
-  {minRev:26000,peak:{40:1000,45:1700,50:2500,55:3500}},
-  {minRev:22000,peak:{40:600,45:1200,50:2000,55:3000}},
-  {minRev:18000,peak:{40:300,45:600,50:1400,55:2000}},
-  {minRev:15000,peak:{40:100,45:300,50:500,55:800}}
+  {minRev:34000,peak:{40:1500,45:3500,50:5500,55:8000}},
+  {minRev:30000,peak:{40:1300,45:2900,50:3800,55:4800}},
+  {minRev:26000,peak:{40:1000,45:2000,50:2800,55:3800}},
+  {minRev:22000,peak:{40:700,45:1500,50:2300,55:3300}},
+  {minRev:18000,peak:{40:500,45:900,50:1700,55:2300}},
+  {minRev:15000,peak:{40:200,45:400,50:700,55:1000}}
 ];
 var PEAK_LEVELS=[40,45,50,55];
 
@@ -662,14 +644,13 @@ function calcReward(d){
     cards.push({title:'流水高峰奖励',desc:entered?'未达标':'未入围',amount:0,hint:'',ok:false});
   }
 
-  // === 3. 快优订单奖励 ===
+  // === 2. 快优订单奖励 ===
   var fastAmt=0;
-  if(entered&&(tier==='S'||tier==='S+')){
-    if(fr>=0.60&&fr<0.70){fastAmt=100}
-  }
+  if(entered&&tier==='S+'&&fr>=0.60&&fr<=0.75){fastAmt=300}
+  else if(entered&&tier==='S'&&fr>=0.60&&fr<=0.75){fastAmt=200}
   if(fastAmt>0){
     totalReward+=fastAmt;
-    cards.push({title:'快优订单奖励',desc:'快优占比'+(fr*100).toFixed(1)+'%',amount:fastAmt,hint:'再+'+((0.70-fr)*100).toFixed(1)+'%',ok:true});
+    cards.push({title:'快优订单奖励',desc:'快优占比'+(fr*100).toFixed(1)+'%',amount:fastAmt,hint:'',ok:true});
   }else{
     cards.push({title:'快优订单奖励',desc:entered?'快优'+(fr*100).toFixed(1)+'%':'未入围',amount:0,hint:'',ok:false});
   }

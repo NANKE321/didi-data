@@ -185,9 +185,9 @@ def main():
         data_map[r['date'] + '_' + r['name']] = r
     all_data = list(data_map.values())
 
-    # 保留最近7天
-    dates = sorted(set(r['date'] for r in all_data), reverse=True)[:7]
-    final = [r for r in all_data if r['date'] in dates]
+    # 保留全部日期
+    dates = sorted(set(r['date'] for r in all_data), reverse=True)
+    final = all_data
 
     # 写入
     with open('data.json', 'w', encoding='utf-8') as f:

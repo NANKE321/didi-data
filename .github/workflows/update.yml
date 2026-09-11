@@ -2,8 +2,10 @@ name: 数据更新
 on:
   push:
     paths:
-      - 'uploads/*.xls'
-      - 'uploads/*.xlsx'
+      - uploads/*.xls
+      - uploads/*.xlsx
+permissions:
+  contents: write
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -14,21 +16,22 @@ jobs:
           python-version: '3.11'
       - run: pip install xlrd openpyxl requests
       - run: python scripts/convert.py
-      - name: 推送
+      - name: 推送数据
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config user.name 'github-actions'
+          git config user.email 'actions@github.com'
           git add data.json
-          git commit -m "data: 自动更新 $(date +%Y-%m-%d)" || echo "无变更"
+          git diff --staged --quiet || git commit -m 'data: 自动更新'
           git push
       - name: 同步小程序
         env:
-          SECRET: ${{ secrets.APPSECRET }}
+          SECRET: *** secrets.APPSECRET }}
           ENV: cloud1-d9ga0w2uj0e2de7bd
         run: python scripts/sync_cloud.py
       - name: 清理
+        if: always()
         run: |
           rm -f uploads/*.xls uploads/*.xlsx
           git add uploads/
-          git commit -m "chore: 清理" || echo "无变更"
-          git push
+          git diff --staged --quiet || git commit -m 'chore: 清理'
+          git push || true
